@@ -2,10 +2,6 @@
 
 ### Writeup / README
 
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  
-
-You're reading it! Below I describe how I addressed each rubric point and where in my code each point is handled.
-
 ### Explain the Starter Code
 
 **States in backyard_flyer_solution.py:**
@@ -61,25 +57,39 @@ The first line of the colliders.csv file contains the latitude and longitude. "l
  - Convert string to float
  - set the home position with the **self.set_home_position(lon0, lat0, 0)** command
 
-And here is a lovely picture of our downtown San Francisco environment from above!
-![Map of SF](./misc/map.png)
-
-
-
-
-Meanwhile, here's a picture of me flying through the trees!
-![Forest Flying](./misc/in_the_trees.png)
+#### 2. Set your current local position
+ - The function global_to_local is used to convert the global position into local position.
+ - global_to_local takes global_position and global_home as input arguments.
+ - This function converts global coordinates in lat, lon format to local coordinates in NED coordinate systems .
 
 #### 3. Set grid start position from local position
-This is another step in adding flexibility to the start location. As long as it works you're good to go!
+ - Create a grid for the input data along with the target altitude and safety margin from the obstacles.
+ - The **create_grid()** from the planning_utils.py is used to create the grid.
+ - This function returns the grid along with the north and east offset.
+ - These north and east offset is considered as the grid start position ( negated values). This is the grid center.
+ - Now the start position is changed to the current position instead of map center by reducing the offset from the local North and east positions.
 
 #### 4. Set grid goal position from geodetic coords
-This step is to add flexibility to the desired goal location. Should be able to choose any (lat, lon) within the map and have it rendered to a goal location on the grid.
-
+ - Set any valid (should not contain obstacle) Lat, Lon position as goal.
+ - Convert lat and lon to local NED coordinate systems using global_to_local() function 
+ - Translate the points by reducing it from the North and east offsets.
+ - Implement ceil operation and convert to integer type so that the grid positions can be accessed.
+ - The obtained grid position is the Goal position.
+  
 #### 5. Modify A* to include diagonal motion (or replace A* altogether)
-Minimal requirement here is to modify the code in planning_utils() to update the A* implementation to include diagonal motions on the grid that have a cost of sqrt(2), but more creative solutions are welcome. Explain the code you used to accomplish this step.
-
+ - To obtain diagonal motions also in the A* planning, add all diagonal motions such as North-East, North-West, South-East and South-West to the Actions class.
+ - The third element of each action in the Acion class represent the cost of that action. So add np.sqrt(2) as the cost of the diagonal actions.
+ - Execute checks to ensure the actions does not leads to leavig out of the grid or does not reach any obstacles.
+ - Only actions which satisfy above conditions are considered during the A* path planning.
+ 
 #### 6. Cull waypoints 
-For this step you can use a collinearity test or ray tracing method like Bresenham. The idea is simply to prune your path of unnecessary waypoints. Explain the code you used to accomplish this step.
+ - Remove the points waypoints in the obtained path ( from A*) which lies in the same line.
+ - This is done by executing a colinearity test on every 3 neighboring points.
+ - If the determinant of the matrix formed by this 3 points is 0 or less than a small value epsilon, then it indicates the points lie exactly or almost in a straight line 
+ - Remove such points from the waypoints to reduce the number of way points to be fed to the simulator.
+ - This process is done by prune_path() and collinearity_check() functions in planning_utils.py file.
 
+### Execute the flight
 
+It works as expected. The drone reaches from start to goal position.
+As there is a lot of grid cells and around 8 actions for each grid cells, It takes a while to calcualte the path using A* algorithm.
